@@ -1,0 +1,134 @@
+package com.volleydemo;
+
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
+import android.webkit.WebView;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.android.volley.VolleyError;
+import com.volleydemo.okhttputils.OkHttpUtils;
+import com.volleydemo.utils.HttpHelper;
+import com.volleydemo.utils.view.LuckyPanView;
+import com.volleydemo.utils.webview.OnWebLoadListener;
+import com.volleydemo.utils.webview.WebLayout;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+public class MainActivity extends AppCompatActivity implements OnWebLoadListener {
+    TextView hello;
+    private LuckyPanView mLuckyPanView;
+    private ImageView mStartBtn;
+    private WebLayout webLayout;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        hello = (TextView) findViewById(R.id.hello_tv);
+        mLuckyPanView = (LuckyPanView) findViewById(R.id.id_luckypan);
+        mStartBtn = (ImageView) findViewById(R.id.id_start_btn);
+        webLayout = (WebLayout) findViewById(R.id.activity_web_layout);
+        webLayout.loadUrl("http://www.baidu.com");
+        webLayout.setOnLoadErrorListener(this);
+
+//        TestOkHttp();
+//        TestVolley();
+//        startLuckPan();
+    }
+
+    private void startLuckPan() {
+
+
+        mStartBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!mLuckyPanView.isStart()) {
+                    mStartBtn.setImageResource(R.drawable.stop);
+                    mLuckyPanView.luckyStart(2);
+                } else {
+                    if (!mLuckyPanView.isShouldEnd()){
+                        mStartBtn.setImageResource(R.drawable.start);
+                        mLuckyPanView.luckyEnd();
+                    }
+                }
+            }
+        });
+    }
+
+    private void TestVolley() {
+        long startTime = System.nanoTime();
+        HttpHelper<String> httpHelper = new HttpHelper<String>(this) {
+            @Override
+            protected void disposeVolleyError(VolleyError error) {
+                Log.e("error----",error.getMessage());
+            }
+
+            @Override
+            protected void disposeResponse(JSONObject response) {
+                Log.e("onSuccess", "-----" + response.toString());
+            }
+        };
+        Map<String, String> map = new HashMap<>();
+        map.put("type", "001");
+        map.put("l", "39.938133,116.395739");
+        httpHelper.doHttpPost("http://gc.ditu.aliyun.com/regeocoding?", map);
+        long endTime = System.nanoTime() - startTime;
+
+        Log.e("onVolley耗时", "-----" + TimeUnit.NANOSECONDS.toSeconds(endTime));
+    }
+
+    /**
+     * 测试okhttp
+     */
+    private void TestOkHttp() {
+        long startTime = System.nanoTime();
+        Map<String, String> map = new HashMap<>();
+        map.put("type", "001");
+        map.put("l", "39.938133,116.395739");
+        OkHttpUtils.getInstance().post(this, "http://gc.ditu.aliyun.com/regeocoding?", map, new OkHttpUtils.DataCallBack() {
+            @Override
+            public void onStart() {
+                Log.e("onStart", "-----");
+            }
+
+            @Override
+            public void onSuccess(String result) {
+                Log.e("onSuccess", "-----" + result);
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Log.e("onSuccess", "-----" + error);
+            }
+        });
+        long endTime = System.nanoTime() - startTime;
+        Log.e("onok耗时", "-----" + TimeUnit.NANOSECONDS.toSeconds(endTime));
+    }
+
+    private void setView(String data) {
+        hello.setText(data);
+    }
+
+    @Override
+    public void onLoadErrorListener(WebView view, String url, int errorCode, String desciption) {
+
+    }
+
+    @Override
+    public void onLoadSuccessListener(WebView view, String title) {
+        hello.setText(title);
+    }
+
+    @Override
+    protected void onDestroy() {
+        webLayout.onDestroy();
+        super.onDestroy();
+    }
+}
